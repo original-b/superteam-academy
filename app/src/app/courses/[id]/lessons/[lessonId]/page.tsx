@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, CheckCircle, ChevronLeft, ChevronRight, PlayCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle, ChevronLeft, ChevronRight, PlayCircle, Code } from "lucide-react";
 import { useState } from "react";
 
 // Mock data
@@ -13,17 +13,41 @@ const courseData = {
       id: "m1",
       title: "Module 1: Solana Fundamentals",
       lessons: [
-        { id: "l1", title: "What is Solana?", duration: "15 min", completed: true, videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
-        { id: "l2", title: "Accounts and Programs", duration: "25 min", completed: false, videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
-        { id: "l3", title: "Transactions and Instructions", duration: "20 min", completed: false, videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
+        { id: "l1", title: "What is Solana?", duration: "15 min", completed: true, type: "video", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
+        { id: "l2", title: "Accounts and Programs", duration: "25 min", completed: false, type: "video", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
+        { id: "l3", title: "Transactions and Instructions", duration: "20 min", completed: false, type: "video", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
       ]
     },
     {
       id: "m2",
       title: "Module 2: Rust Basics for Solana",
       lessons: [
-        { id: "l4", title: "Setting up the Environment", duration: "10 min", completed: false, videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
-        { id: "l5", title: "Rust Syntax Refresher", duration: "45 min", completed: false, videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
+        { id: "l4", title: "Setting up the Environment", duration: "10 min", completed: false, type: "video", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
+        { id: "l5", title: "Rust Syntax Refresher", duration: "45 min", completed: false, type: "video", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
+        { 
+          id: "l6", 
+          title: "Code Challenge: First Program", 
+          duration: "30 min", 
+          completed: false, 
+          type: "challenge",
+          initialCode: `use anchor_lang::prelude::*;
+
+declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+
+#[program]
+pub mod hello_world {
+    use super::*;
+
+    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
+        // Add your code here
+        Ok(())
+    }
+}
+
+#[derive(Accounts)]
+pub struct Initialize {}`,
+          instructions: "Complete the initialize function to log 'Hello World' to the console using msg! macro."
+        },
       ]
     }
   ]
@@ -31,6 +55,8 @@ const courseData = {
 
 export default function LessonPage({ params }: { params: { id: string, lessonId: string } }) {
   const [completed, setCompleted] = useState(false);
+  const [code, setCode] = useState("");
+  const [testResult, setTestResult] = useState<string | null>(null);
   
   // Flatten lessons for navigation
   const allLessons = courseData.modules.flatMap(m => m.lessons);
@@ -43,6 +69,19 @@ export default function LessonPage({ params }: { params: { id: string, lessonId:
   const handleMarkComplete = () => {
     setCompleted(!completed);
   };
+
+  const handleRunTests = () => {
+    setTestResult("Running tests...");
+    setTimeout(() => {
+      setTestResult("✅ Tests passed! Great job.");
+      setCompleted(true);
+    }, 1500);
+  };
+
+  // Set initial code once
+  if (currentLesson.type === 'challenge' && code === "" && currentLesson.initialCode) {
+    setCode(currentLesson.initialCode);
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-900">
@@ -79,51 +118,78 @@ export default function LessonPage({ params }: { params: { id: string, lessonId:
       <div className="flex-1 flex flex-col lg:flex-row max-w-7xl mx-auto w-full">
         {/* Main Content Area */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 lg:max-w-4xl w-full">
-          {/* Video Player Placeholder */}
-          <div className="aspect-video w-full bg-black rounded-xl overflow-hidden shadow-2xl border border-slate-800 mb-8">
-            <iframe 
-              width="100%" 
-              height="100%" 
-              src={currentLesson.videoUrl} 
-              title={currentLesson.title}
-              frameBorder="0" 
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-              allowFullScreen
-              className="w-full h-full"
-            ></iframe>
-          </div>
+          
+          {currentLesson.type === 'video' ? (
+            <>
+              {/* Video Player */}
+              <div className="aspect-video w-full bg-black rounded-xl overflow-hidden shadow-2xl border border-slate-800 mb-8">
+                <iframe 
+                  width="100%" 
+                  height="100%" 
+                  src={currentLesson.videoUrl} 
+                  title={currentLesson.title}
+                  frameBorder="0" 
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                  allowFullScreen
+                  className="w-full h-full"
+                ></iframe>
+              </div>
 
-          <div className="bg-slate-800 rounded-xl border border-slate-700 p-6 md:p-8 mb-8">
-            <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">{currentLesson.title}</h2>
-            
-            <div className="prose prose-invert max-w-none prose-slate">
-              <p className="text-lg text-slate-300 mb-6 leading-relaxed">
-                In this lesson, we will cover the fundamental concepts of {currentLesson.title.toLowerCase()}. 
-                You'll learn how it fits into the broader Solana ecosystem and why it's crucial for building robust decentralized applications.
-              </p>
-              
-              <h3 className="text-xl font-semibold text-white mt-8 mb-4">Key Takeaways</h3>
-              <ul className="space-y-2 text-slate-300 list-disc pl-5">
-                <li>Understand the core mechanism behind the concept.</li>
-                <li>Learn how to apply it in a real-world Rust program.</li>
-                <li>Identify common pitfalls and best practices.</li>
-              </ul>
-              
-              <h3 className="text-xl font-semibold text-white mt-8 mb-4">Resources</h3>
-              <ul className="space-y-3">
-                <li>
-                  <a href="#" className="text-blue-400 hover:text-blue-300 flex items-center">
-                    <span className="mr-2">📄</span> Official Documentation
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-blue-400 hover:text-blue-300 flex items-center">
-                    <span className="mr-2">💻</span> Source Code Repository
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
+              <div className="bg-slate-800 rounded-xl border border-slate-700 p-6 md:p-8 mb-8">
+                <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">{currentLesson.title}</h2>
+                <div className="prose prose-invert max-w-none prose-slate">
+                  <p className="text-lg text-slate-300 mb-6 leading-relaxed">
+                    In this lesson, we will cover the fundamental concepts of {currentLesson.title.toLowerCase()}. 
+                  </p>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Code Challenge Interface */}
+              <div className="bg-slate-800 rounded-xl border border-slate-700 p-6 md:p-8 mb-8">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-2xl md:text-3xl font-bold text-white flex items-center">
+                    <Code className="mr-3 h-8 w-8 text-blue-400" />
+                    {currentLesson.title}
+                  </h2>
+                </div>
+                
+                <div className="bg-slate-900/50 p-4 rounded-lg border border-slate-700 mb-6">
+                  <h3 className="text-lg font-semibold text-white mb-2">Instructions</h3>
+                  <p className="text-slate-300">{currentLesson.instructions}</p>
+                </div>
+
+                <div className="bg-[#1e1e1e] rounded-lg border border-slate-700 overflow-hidden mb-6 flex flex-col h-[400px]">
+                  <div className="bg-[#2d2d2d] px-4 py-2 border-b border-slate-700 flex items-center">
+                    <span className="text-xs text-slate-400 font-mono">lib.rs</span>
+                  </div>
+                  <textarea
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    className="flex-1 w-full bg-transparent text-slate-300 font-mono p-4 focus:outline-none resize-none"
+                    spellCheck={false}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <button 
+                    onClick={handleRunTests}
+                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center"
+                  >
+                    <PlayCircle className="h-5 w-5 mr-2" />
+                    Run Tests
+                  </button>
+                  
+                  {testResult && (
+                    <div className="text-sm font-medium text-green-400 bg-green-400/10 px-4 py-2 rounded-lg border border-green-400/20">
+                      {testResult}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Bottom Navigation */}
           <div className="flex items-center justify-between py-6 border-t border-slate-800">
@@ -190,6 +256,10 @@ export default function LessonPage({ params }: { params: { id: string, lessonId:
                       >
                         {lesson.completed ? (
                           <CheckCircle className="h-5 w-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" />
+                        ) : lesson.type === 'challenge' ? (
+                          <Code className={`h-5 w-5 mr-3 flex-shrink-0 mt-0.5 ${
+                            lesson.id === params.lessonId ? 'text-blue-400' : 'text-slate-500 group-hover:text-slate-400'
+                          }`} />
                         ) : (
                           <PlayCircle className={`h-5 w-5 mr-3 flex-shrink-0 mt-0.5 ${
                             lesson.id === params.lessonId ? 'text-blue-400' : 'text-slate-500 group-hover:text-slate-400'
